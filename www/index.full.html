@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <title>Монитор телеконференций</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="av" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="/css/main.css">
+    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script type="text/javascript" src="/js/socket.io.min.js"></script>
+    <script type="text/javascript">
+	var c = {
+	  "343": {
+	    "1790":{"R":1},"1791":{"R":0},"1792":{"R":0},
+	    "1793":{"R":0},"1794":{"R":0},"1795":{"R":1},
+	    "1796":{"R":0},"1797":{"R":1},"1798":{"R":0},
+	    "1799":{"R":0},"1890":{"R":0},"1891":{"R":1},
+	    "1892":{"R":0},"1893":{"R":0},"1894":{"R":1},
+	    "1895":{"R":0},"1896":{"R":0},"1897":{"R":0},
+	    "1898":{"R":0},"1899":{"R":1},"1990":{"R":0},
+	    "1991":{"R":0},"1992":{"R":0},"1993":{"R":0},
+	    "1994":{"R":0},"1995":{"R":0},"1996":{"R":0},
+	    "1997":{"R":1},"1998":{"R":0},"1999":{"R":1},
+	    "4000":{"R":0},"4001":{"R":0},"4002":{"R":0},
+	    "4003":{"R":0},"4004":{"R":0},"4005":{"R":0},
+	    "4006":{"R":0},"4007":{"R":0},"4008":{"R":0},
+	    "4009":{"R":0},"4010":{"R":0},"4040":{"R":0}
+	    },
+	  "495": {
+            "1790":{"R":0},"1791":{"R":0},"1792":{"R":0},
+	    "1793":{"R":0},"1794":{"R":0},"1795":{"R":0},
+	    "1796":{"R":0},"1797":{"R":0},"1798":{"R":0},
+	    "1799":{"R":0}
+            },
+	  "499": {
+	    "4440":{"R":0},"4441":{"R":0},"4442":{"R":0},
+	    "4443":{"R":0},"4444":{"R":0},"4445":{"R":0}
+            }
+	};
+	var cls={
+	    "343": "free1",
+	    "495": "free2",
+	    "499": "free2"
+	};
+	var num_shift={
+	    "343": 0,
+	    "495": 6000,
+	    "499": 0
+	};
+
+	var s = new Object();
+	s['343'] = io.connect(':9343');
+	s['495'] = io.connect(':9495');
+	s['499'] = io.connect(':9499');
+
+	var pi=new Object();
+
+	//if (!s499.socket.connected)
+
+	s['343'].on('connect',function() { 
+	    if (pi['343']) clearTimeout(pi['343']); 
+	    s['343'].emit('subscribe', 'confs'); 
+	});
+	s['343'].on('confs',function(data) { upd('343',data); });
+	s['343'].on('disconnect', function() { pi['343']=setTimeout("paint_it_black('343')",1000); });
+	s['343'].on('error', function() { 
+	    if (!pi['343'])
+		pi['343']=setTimeout("paint_it_black('343')",1000); 
+	    setTimeout(function () { s['343'].socket.reconnect(); },15000);
+	});
+
+	s['495'].on('connect',function() { 
+	    if (pi['495']) clearTimeout(pi['495']); 
+	    s['495'].emit('subscribe', 'confs'); 
+	});
+	s['495'].on('confs',function(data) { upd('495',data); });
+	s['495'].on('disconnect', function() { pi['495']=setTimeout("paint_it_black('495')",1000); });
+	s['495'].on('error', function() { 
+	    if (!pi['495'])
+		pi['495']=setTimeout("paint_it_black('495')",1000); 
+	    setTimeout(function () { s['495'].socket.reconnect(); },15000);
+	});
+
+	s['499'].on('connect',function() { 
+	    if (pi['499']) clearTimeout(pi['499']); 
+	    s['499'].emit('subscribe', 'confs'); 
+	});
+	s['499'].on('confs',function(data) { upd('499',data); });
+	s['499'].on('disconnect', function() { pi['499']=setTimeout("paint_it_black('499')",1000); });
+	s['499'].on('error', function() { 
+	    if (!pi['499'])
+		pi['499']=setTimeout("paint_it_black('499')",1000); 
+	    setTimeout(function () { s['499'].socket.reconnect(); },15000);
+	});
+
+	function upd(abc,data) {
+	    for (var conf in c[abc]) {
+	        if (!data[conf]) data[conf]=new Object();
+		
+		for (var prop in c[abc][conf])
+		    if (!data[conf].hasOwnProperty(prop)) data[conf][prop]=c[abc][conf][prop];
+		
+		if (!data[conf].hasOwnProperty("M")) data[conf].M=0;
+
+                link="#";
+                css_class=cls[abc];
+                if (data[conf].M>0) {
+                    css_class="talking";
+                    link="/"+abc+"/"+(parseInt(conf,10)+num_shift[abc]);
+		}
+                $("div#c_"+abc+conf).attr("class",css_class);
+                $("div#c_"+abc+conf+" > a").attr("href",link);
+                $("td#m_"+abc+conf).html(data[conf].M);
+	    }
+        }
+
+	function paint_it_black(abc) {
+	    for (var conf in c[abc]) {
+	    	c[abc][conf].M=0;
+	    	$("div#c_"+abc+conf).attr("class","err");
+            	$("div#c_"+abc+conf+" > a").attr("href","#");
+            	$("td#m_"+abc+conf).html("?");
+	    }
+	}
+
+        $(document).ready(function(){
+	    for (var abc in c) for (var conf in c[abc]) { $("div#content").append("<div id=c_"+abc+conf+" class="+cls[abc]+"><a href=#>\n<table><tr class=l1><td>"+abc+"<span class=big>"+(parseInt(conf,10)+num_shift[abc])+"</span></td><td><div "+(c[abc][conf].R==1?"class=rec title='Ведется аудиозапись конфереции'":"") +"></div></td></tr><tr class=l2><td id=m_"+abc+conf+">0</td><td><div class=man></div></td></tr></table>\n</a></div>"); }
+        });
+	
+    </script>
+</head>
+<body>
+<h1>Монитор телеконференций</h1>
+<div id=content></div>
+</body>
+<!--[if lt IE 8]>
+<script type="text/javascript">alert("IE не поддерживается. Откройте другим браузером.");</script>
+<![endif]-->
+</html>

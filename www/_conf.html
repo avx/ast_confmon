@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="av" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="/css/conf.css" >
+    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script src="/js/socket.io.min.js"></script>
+    <script type="text/javascript">function hms(e){var t=Math.floor(e/3600);var n=Math.floor(e/60%60);var r=Math.floor(e%60);if(t<10)t="0"+t;if(n<10)n="0"+n;if(r<10)r="0"+r;return t+":"+n+":"+r}function app(e,t){socket.emit(e,{conf:num,chan:t});return false}var arg=(window.location.pathname+"").match(/(\d+)\/(\d+)/);if(!arg)window.location.replace("/");var code=arg[1];var num=arg[2];var mm=new Object;var mt=new Object;var path={343:":9343",495:":9495",499:":9499"};var socket=io.connect(path[code]);if(code=="495")num=""+(parseInt(num,10)-6e3);socket.on("connect",function(){socket.emit("unixtime");socket.emit("subscribe",num)});var TimeDelta=0;var unixtime;socket.on("unixtime",function(e){TimeDelta=Math.round((new Date).getTime()/1e3)-e});socket.on("list",function(e){var t=0;var n="";unixtime=Math.round((new Date).getTime()/1e3);$.each(e,function(e,r){t++;var s="mute",o="class=empty";if(r.T)o="class=talking title=Разговаривает";if(r.m){o="class=muted title='Микрофон выключен'";s="unmute"}mm[e]=t;mt["t_"+t]=parseInt(r.S,10);var u=hms(unixtime-TimeDelta-mt["t_"+t]);n+="<tr><td><div id=m_"+t+" "+o+"></div></td><td class=lpad>"+r.N+"</td><td class=lpad>"+r.n.replace(/&/g,"&").replace(/>/g,"&gt;").replace(/</g,"&lt;").replace(/"/g,"&quot;").replace(/'/g,"&apos;")+"</td><td class=lpad><div id=t_"+t+" class=dur>"+u+"</div></td><td><a href=# onClick=\"javascript:app('toggle_mute','"+e+"');\">\n<div class='back' id='mute_btn'></div></a></td><td><a href=# onClick=\"javascript:app('kick','"+e+"');\"><div class='back' id='kick_btn'></div>\n</a></td></tr>"});$("tbody#content").html(n);$("span#total_members").html(t);});socket.on("upd",function(e){for(var t in e){$("div#m_"+mm[t]).attr("class","empty");$("div#m_"+mm[t]).attr("title","");if(e[t].T==1){$("div#m_"+mm[t]).attr("class","talking");$("div#m_"+mm[t]).attr("title","Разговаривает")}if(e[t].m==1){$("div#m_"+mm[t]).attr("class","muted");$("div#m_"+mm[t]).attr("title","Микрофон выключен")}}});setInterval(function(){$("div.dur").each(function(){unixtime=Math.round((new Date).getTime()/1e3);$(this).html(hms(unixtime-TimeDelta-parseInt(mt[$(this).attr("id")],10)))})},1e3);$(document).ready(function(){document.title="Конференция "+code+"-"+arg[2];$("h1").html(document.title)})</script>
+<!--[if lt IE 8]>
+    <script type="text/javascript">alert("IE не поддерживается. Откройте другим браузером.");</script>
+<![endif]-->
+</head>
+<body>
+<h1></h1>
+<div id=content>
+<table cellspacing=0>
+    <thead><tr>
+        <th width=33px></td>
+        <th width=192px>Номер</td>
+        <th >CallerID</td>
+        <th width=192px>Время участия</td>
+        <th width=36px></td>
+        <th width=36px></td>
+    </tr></thead>
+    <tbody id=content></tbody>
+    <tfoot><tr><td colspan=6 id=total>Всего участников: <span id=total_members>0</span></div></td></tr></tfoot>
+</table>
+</div>
+<a href="/">
+<div style="position: fixed; top:0px; left: 0px; margin:0px; height:100%; width:36px; padding-top: 15px; padding-left:5px;padding-right:5px;" class=back>
+<div id=row>
+</div>
+</div>
+</a>
+</body>
+</html>

@@ -1,0 +1,43 @@
+#!/bin/sh
+
+(
+i=1;
+while true; do
+	before=`date '+%Y%m%d%H%M%S'`
+	env node /usr/local/asterisk/appserv/appserv_343.js $i >> /var/log/appserv/appserv_343.log 2>&1
+	after=`date '+%Y%m%d%H%M%S'`
+	if [ $((after-before)) -le 5 ]; then
+	    # to fast 	
+	    sleep 15;
+	fi;
+	i=$((i+1));
+done
+) &
+
+(
+i=1;
+while true; do
+	before=`date '+%Y%m%d%H%M%S'`
+	env node /usr/local/asterisk/appserv/appserv_495.js $i >> /var/log/appserv/appserv_495.log 2>&1
+	after=`date '+%Y%m%d%H%M%S'`
+	if [ $((after-before)) -le 5 ]; then
+	    # to fast 	
+	    sleep 15;
+	fi;
+	i=$((i+1));
+done
+) &
+
+(
+i=1;
+while true; do
+	before=`date '+%Y%m%d%H%M%S'`
+	env node /usr/local/asterisk/appserv/appserv_499.js $i >> /var/log/appserv/appserv_499.log 2>&1
+	after=`date '+%Y%m%d%H%M%S'`
+	if [ $((after-before)) -le 5 ]; then
+	    # to fast 	
+	    sleep 15;
+	fi;
+	i=$((i+1));
+done
+) &

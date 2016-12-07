@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="description" content="" />
+    <meta name="author" content="av" />
+    <meta name="viewport" content="width=device-width" />
+    <link rel="stylesheet" href="/css/conf.css" >
+    <script type="text/javascript" src="/js/jquery.js"></script>
+    <script src="/js/socket.io.min.js"></script>
+    <script type="text/javascript">
+	var arg = (window.location.pathname+'').match(/(\d+)\/(\d+)/);
+	if (!arg) window.location.replace("/");
+
+	var code=arg[1];
+	var num=arg[2];
+
+	var mm=new Object();
+	var mt=new Object();
+
+	var path={
+	 "343": ":9343",
+	 "495": ":9495",
+	 "499": ":9499"
+	};
+
+	var socket = io.connect(path[code]);
+
+	if (code=="495") num=''+(parseInt(num,10)-6000);
+
+	socket.on('connect',function() {  socket.emit('unixtime'); socket.emit('subscribe', num); });
+
+	var TimeDelta=0;
+	var unixtime;
+
+	socket.on('unixtime', function (data) {
+		TimeDelta=Math.round(new Date().getTime()/1000)-data;
+	});
+
+	function hms(sec) {
+	    var H=Math.floor(sec/3600);
+	    var M=Math.floor((sec/60)%60);
+	    var S=Math.floor(sec%60);
+	    if (H<10) H='0'+H;
+	    if (M<10) M='0'+M;
+	    if (S<10) S='0'+S;
+	    return (H+':'+M+':'+S);
+	}
+
+	socket.on('list', function (data) {
+		var i=0;
+		var tbody="";
+		
+		unixtime=Math.round(new Date().getTime()/1000);
+                $.each(data, function(idx, m){
+		    i++;
+                    var mute="mute", mstatus="class=empty";
+                    if (m.T) mstatus="class=talking title=Разговаривает";
+		    if (m.m) { mstatus="class=muted title='Микрофон выключен'"; mute="unmute"; }
+		    mm[idx]=i;
+		    mt["t_"+i]=parseInt(m.S,10);
+		    var dur=hms(unixtime-TimeDelta-mt["t_"+i]);
+                    tbody+="<tr><td><div id=m_"+i+" "+mstatus+"></div></td><td>"+m.N+"</td><td>"+m.n.replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;')+"</td><td><div id=t_"+i+" class=dur>"+dur+"</div></td><td><a href=# onClick=\"javascript:app('toggle_mute','"+idx+"');\">\n<div class='back' id='mute_btn'></div></a></td><td><a href=# onClick=\"javascript:app('kick','"+idx+"');\"><div class='back' id='kick_btn'></div>\n</a></td></tr>";
+                });
+		$("tbody#content").html(tbody);
+                $("span#total_members").html(i);
+	});
+	socket.on('upd', function (data) {
+		for (var c in data) {
+			$("div#m_"+mm[c]).attr("class","empty");
+			$("div#m_"+mm[c]).attr("title","");
+			if (data[c].T==1) {
+				$("div#m_"+mm[c]).attr("class","talking");
+				$("div#m_"+mm[c]).attr("title","Разговаривает");
+			}
+			if (data[c].m==1) {
+				$("div#m_"+mm[c]).attr("class","muted");
+				$("div#m_"+mm[c]).attr("title","Микрофон выключен");
+			}
+		}
+	});
+
+	
+	setInterval(function() { 
+		$("div.dur").each(function() { 
+			unixtime=Math.round(new Date().getTime()/1000);
+			$(this).html(hms(unixtime-TimeDelta-parseInt(mt[$(this).attr("id")],10)));
+		}); 
+	},1000);
+
+        function app(act,channel) {
+	    socket.emit(act, { conf: num, chan: channel} );
+            return false;
+        }
+
+        $(document).ready(function(){
+            document.title="Конференция "+code+"-"+arg[2];
+            $("h1").html(document.title);
+        });
+     </script> 
+<!--[if lt IE 8]>
+     <script type="text/javascript">alert("IE не поддерживается. Откройте другим браузером.");</script>
+<![endif]-->
+</head>
+<body>
+<h1></h1>
+<table cellspacing=0> 
+    <thead><tr>
+        <th width=33px></td>
+        <th width=192px>Номер</td>
+        <th >CallerID</td>
+        <th width=192px>Время участия</td>
+        <th width=36px></td>
+        <th width=36px></td>
+    </tr></thead>
+    <tbody id=content></tbody>
+    <tfoot><tr><td colspan=6 id=total>Всего участников: <span id=total_members>0</span></div></td></tr></tfoot>
+</table>
+<a href="/">
+<div style="position: fixed; top:0px; left: 0px; margin:0px; height:100%; width:36px; padding-top: 15px; padding-left:5px;padding-right:5px;" class=back>
+<div id=row>
+</div>
+</div>
+</a>
+</body>
+</html>
